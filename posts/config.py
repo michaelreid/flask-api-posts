@@ -7,7 +7,7 @@ class TestingConfig(object):
     DEBUG = True
     
 class TravisConfig(object):
-    DATABASE_URI = "postgresql://localhost:5432/blogful-test"
+    DATABASE_URI = "postgresql://localhost:5432/posts-test"
     DEBUG = False
     SECRET_KEY = "Not secret"
     
