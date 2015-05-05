@@ -13,6 +13,8 @@ from posts.database import Base, engine, session
 class TestAPI(unittest.TestCase):
     """ Tests for the posts API """
 
+    # Setting testing infrastructure up
+
     def setUp(self):
         """ Test setup """
         self.client = app.test_client()
@@ -21,12 +23,29 @@ class TestAPI(unittest.TestCase):
         Base.metadata.create_all(engine)
 
 
-    # Testing that api can return empty response
+
+    # Test client doesn't accept unsupported header
+
+    def testUnsupportedAcceptHeader(self):
+        """ Client accepts json response """
+        response = self.client.get("/api/posts",
+                                   headers=[("Accept", "application/xml")]
+        )
+        self.assertEqual(response.status_code, 406)
+        self.assertEqual(response.mimetype, "application/json")
+
+        data = json.loads(response.data)
+        self.assertEqual(data["message"], "Request must accept application/json data")
+
+        
+    # Testing api can return empty response
 
     def testGetEmptyPosts(self):
         """ Getting empty posts from the database """
 
-        response = self.client.get("/api/posts")
+        response = self.client.get("/api/posts",
+                                   headers=[("Accept", "application/json")]
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.mimetype, "application/json")
@@ -52,7 +71,10 @@ class TestAPI(unittest.TestCase):
         # Then retrieve the posts using the api endpoint
 
             # Define response as from the endpoint testing
-        response = self.client.get("/api/posts")
+        response = self.client.get("/api/posts",
+                                   headers=[("Accept", "application/json")]
+        )
+        
             # Test response is successful and mimetype correct
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.mimetype, "application/json")
@@ -82,7 +104,9 @@ class TestAPI(unittest.TestCase):
         session.commit()
 
         # Then retrieve from database and test if correct
-        response = self.client.get("/api/posts/{}".format(postB.id))
+        response = self.client.get("/api/posts/{}".format(postB.id),
+                                   headers=[("Accept", "application/json")]
+        )
 
             # - correct response and correct mimetype
         self.assertEqual(response.status_code, 200)
@@ -98,16 +122,17 @@ class TestAPI(unittest.TestCase):
 
     def testNonExistantPost(self):
         """ Getting a single post which does not exist """
-        response = self.client.get("/api/posts/1")
-
+        response = self.client.get("/api/posts/1",
+                                   headers=[("Accept", "application/json")]
+        )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.mimetype, "application/json")
 
         data = json.loads(response.data)
         self.assertEqual(data["message"], "Could not find post with id 1")
 
-       
-
+        
+    # Remove testing infrastructure
 
     def tearDown(self):
         """ Test teardown """

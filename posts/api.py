@@ -9,6 +9,7 @@ from posts import app
 from database import session
 
 @app.route("/api/posts", methods=["GET"])
+@decorators.accept("application/json")
 def posts_get():
     """  Get a list of posts """
 
@@ -22,6 +23,7 @@ def posts_get():
 
 
 @app.route("/api/posts/<int:id>", methods=["GET"])
+@decorators.accept("application/json")
 def post_get(id):
     """  Single post endpoint """
 
