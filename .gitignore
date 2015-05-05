@@ -2,3 +2,5 @@ env
 *.pyc
 posts/*.pyc
 tests/*.pyc
+posts/#*
+tests/#*
