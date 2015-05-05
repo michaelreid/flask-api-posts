@@ -4,3 +4,4 @@ posts/*.pyc
 tests/*.pyc
 posts/#*
 tests/#*
+*.yml~

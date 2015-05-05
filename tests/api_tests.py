@@ -25,7 +25,7 @@ class TestAPI(unittest.TestCase):
 
 
     # Test client doesn't accept unsupported header
-
+    # ---------------------------------------------
     def testUnsupportedAcceptHeader(self):
         """ Client accepts json response """
         response = self.client.get("/api/posts",
@@ -39,7 +39,7 @@ class TestAPI(unittest.TestCase):
 
         
     # Testing api can return empty response
-
+    # -------------------------------------
     def testGetEmptyPosts(self):
         """ Getting empty posts from the database """
 
@@ -54,8 +54,9 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(data, [])
 
 
+        
     # Testing that api can return posts
-
+    #----------------------------------
     def testGetPosts(self):
         """ Getting posts from a populated database """
 
@@ -90,9 +91,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(postB["title"], "Example Post B")
         self.assertEqual(postB["body"], "Another test")
         
+
         
     # Testing that api can return single post
-
+    #----------------------------------------
     def testGetPost(self):
         """ Getting single post from database """
 
@@ -117,9 +119,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(post["title"],"Example Post B")
         self.assertEqual(post["body"], "Another test")
 
-            
-    # Testing correct response for nonexistant post
 
+        
+    # Testing correct response for nonexistant post
+    #----------------------------------------------
     def testNonExistantPost(self):
         """ Getting a single post which does not exist """
         response = self.client.get("/api/posts/1",
@@ -132,6 +135,35 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(data["message"], "Could not find post with id 1")
 
         
+
+    # Testing api can delete post
+    #----------------------------
+    def testDeleteSinglePost(self):
+        """ Deleting a single post from the database """
+
+        # Define test posts and commit to database
+        postA = models.Post(title="Example Post A", body="Just a test")
+        postB = models.Post(title="Example Post B", body="Another test")
+        
+        session.add_all([postA, postB])
+        session.commit()
+
+
+        # Confirm connect to delete posts endpoint
+        response = self.client.delete("/api/post/1",
+                                   headers=[("Accept", "application/json")]
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+        # Confirm that it's in the database
+        self.testGetPost()
+        
+        # Confirm deletion by testing GETting the same post
+        self.testNonExistantPost()
+
+
+
     # Remove testing infrastructure
 
     def tearDown(self):
