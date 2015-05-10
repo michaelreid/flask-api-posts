@@ -26,7 +26,7 @@ class TestAPI(unittest.TestCase):
 
     # Test client doesn't accept unsupported header
     # ---------------------------------------------
-    def testUnsupportedAcceptHeader(self):
+    def test_unsupported_accept_header(self):
         """ Client accepts json response """
         response = self.client.get("/api/posts",
                                    headers=[("Accept", "application/xml")]
@@ -40,7 +40,7 @@ class TestAPI(unittest.TestCase):
         
     # Testing api can return empty response
     # -------------------------------------
-    def testGetEmptyPosts(self):
+    def test_get_empty_posts(self):
         """ Getting empty posts from the database """
 
         response = self.client.get("/api/posts",
@@ -57,7 +57,7 @@ class TestAPI(unittest.TestCase):
         
     # Testing that api can return posts
     #----------------------------------
-    def testGetPosts(self):
+    def test_get_posts(self):
         """ Getting posts from a populated database """
 
 
@@ -95,7 +95,7 @@ class TestAPI(unittest.TestCase):
         
     # Testing that api can return single post
     #----------------------------------------
-    def testGetPost(self):
+    def test_get_post(self):
         """ Getting single post from database """
 
         # First define test posts and commit to database
@@ -123,7 +123,7 @@ class TestAPI(unittest.TestCase):
         
     # Testing correct response for nonexistant post
     #----------------------------------------------
-    def testNonExistantPost(self):
+    def test_non_existant_post(self):
         """ Getting a single post which does not exist """
         response = self.client.get("/api/posts/1",
                                    headers=[("Accept", "application/json")]
@@ -138,7 +138,7 @@ class TestAPI(unittest.TestCase):
 
     # Testing api can delete post
     #----------------------------
-    def testDeleteSinglePost(self):
+    def test_delete_single_post(self):
         """ Deleting a single post from the database """
 
         # Define test posts and commit to database
@@ -148,22 +148,135 @@ class TestAPI(unittest.TestCase):
         session.add_all([postA, postB])
         session.commit()
 
+        # Test post is in database
+        self.test_get_post()
 
-        # Confirm connect to delete posts endpoint
+        
+        # Test connection to delete posts endpoint
         response = self.client.delete("/api/post/1",
                                    headers=[("Accept", "application/json")]
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.mimetype, "application/json")
 
-        # Confirm that it's in the database
-        self.testGetPost()
-        
+        # Test response message is correct
+        data = json.loads(response.data)
+        self.assertEqual(data["message"], "Deleted post with id 1 from the database")
+                
         # Confirm deletion by testing GETting the same post
-        self.testNonExistantPost()
+        self.test_non_existant_post()
 
 
 
+
+    # Testing api returns with query strings
+    #---------------------------------------
+    def test_get_posts_with_title(self):
+        """ Filtering posts by title """
+
+        # First create number of posts
+        postA = models.Post(title="Post with bells", body="Just a test")
+        postB = models.Post(title="Post with whistles", body="Another test")
+        postC = models.Post(title="Post with whistles", body="More tests")
+
+        # Add posts to database
+        session.add_all([postA, postB, postC])
+        session.commit()
+
+        # Test for posts containing 'whistles' in title
+            # - Header is correct
+        response = self.client.get("/api/posts?title_like=whistles",
+                                   headers=[("Accept", "application/json")]
+                               )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+           # - Number of posts is correct
+        posts = json.loads(response.data)
+        self.assertEqual(len(posts), 2)
+
+            # - Individual post's title and body are correct
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with whistles" )
+        self.assertEqual(post["body"], "Another test" )
+
+        post = posts[1]
+        self.assertEqual(post["title"], "Post with whistles" )
+        self.assertEqual(post["body"], "More tests" )
+
+
+    
+    def test_get_posts_with_body(self):
+        """ Filtering posts by body """
+
+        # First create number of posts
+        postA = models.Post(title="Post with bells", body="Just a test")
+        postB = models.Post(title="Post with whistles", body="Another test")
+        postC = models.Post(title="Post with whistles", body="More tests")
+
+        # Add posts to database
+        session.add_all([postA, postB, postC])
+        session.commit()
+
+
+        # Test for posts containing 'Another' in body
+            # - Header is correct
+        response = self.client.get("/api/posts?body_like=Another",
+                                   headers=[("Accept", "application/json")]
+                               )
+        print response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+           # - Number of posts is correct
+        posts = json.loads(response.data)
+        print posts
+        self.assertEqual(len(posts), 1)
+
+            # - Individual post's title and body are correct
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with whistles" )
+        self.assertEqual(post["body"], "Another test" )
+
+
+
+    def test_get_posts_with_title_and_body(self):
+        """ Filtering posts by title and body """
+
+        # First create number of posts
+        postA = models.Post(title="Post with bells", body="Just a test")
+        postB = models.Post(title="Post with whistles", body="Another test")
+        postC = models.Post(title="Post with whistles", body="More tests")
+
+        # Add posts to database
+        session.add_all([postA, postB, postC])
+        session.commit()
+        
+        
+        # Test for posts containing 'Whistle' in title and 'test' in body
+            # - Header is correct
+        response = self.client.get("/api/posts?title_like=whistles&body_like=test",
+                                   headers=[("Accept", "application/json")]
+                               )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+           # - Number of posts is correct
+        posts = json.loads(response.data)
+        print posts
+        self.assertEqual(len(posts), 2)
+
+            # - Individual post's title and body are correct
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with whistles" )
+        self.assertEqual(post["body"], "Another test" )
+
+        post = posts[1]
+        self.assertEqual(post["title"], "Post with whistles" )
+        self.assertEqual(post["body"], "More tests" )
+
+  
+        
     # Remove testing infrastructure
 
     def tearDown(self):

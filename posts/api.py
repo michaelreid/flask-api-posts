@@ -8,20 +8,47 @@ import decorators
 from posts import app
 from database import session
 
+
+    
+# Returning all posts/or all with a query string in the title
+
 @app.route("/api/posts", methods=["GET"])
 @decorators.accept("application/json")
 def posts_get():
     """  Get a list of posts """
 
-    # Get the posts from the database
-    posts = session.query(models.Post).all()
+    # Construct a query object from query string for title
+    title_like = request.args.get("title_like")
 
-    # Convert to json format
+    # Construct a query object from query string for body
+    body_like = request.args.get("body_like")
+    
+
+    # Pass the query object to database and return all posts if available
+    posts = session.query(models.Post)
+    if title_like and body_like:
+        posts = posts.filter(models.Post.title.contains(title_like)). \
+                filter(models.Post.body.contains(body_like))
+        
+    elif title_like:
+        posts = posts.filter(models.Post.title.contains(title_like))
+        
+    elif body_like:
+        posts = posts.filter(models.Post.body.contains(body_like))
+
+    else:
+        posts = posts.all()
+
+    # Convert posts to JSON format and return response
     data = json.dumps([post.as_dictionary() for post in posts])
     return Response(data, 200, mimetype="application/json")
 
+    
 
 
+
+# Returning a single post
+    
 @app.route("/api/posts/<int:id>", methods=["GET"])
 @decorators.accept("application/json")
 def post_get(id):
@@ -43,6 +70,8 @@ def post_get(id):
     return Response(data, 200, mimetype="application/json")
 
 
+
+# Deleting a single post
 
 @app.route("/api/post/<int:id>", methods=["DELETE"])
 @decorators.accept("application/json")
