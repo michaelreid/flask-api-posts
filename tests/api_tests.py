@@ -38,7 +38,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(data["message"], "Request must accept application/json data")
 
         
-    # Testing api can return empty response
+    # Testing API can return empty response
     # -------------------------------------
     def test_get_empty_posts(self):
         """ Getting empty posts from the database """
@@ -55,7 +55,7 @@ class TestAPI(unittest.TestCase):
 
 
         
-    # Testing that api can return posts
+    # Testing API can return posts
     #----------------------------------
     def test_get_posts(self):
         """ Getting posts from a populated database """
@@ -93,7 +93,7 @@ class TestAPI(unittest.TestCase):
         
 
         
-    # Testing that api can return single post
+    # Testing API can return single post
     #----------------------------------------
     def test_get_post(self):
         """ Getting single post from database """
@@ -136,7 +136,7 @@ class TestAPI(unittest.TestCase):
 
         
 
-    # Testing api can delete post
+    # Testing API can delete post
     #----------------------------
     def test_delete_single_post(self):
         """ Deleting a single post from the database """
@@ -169,8 +169,8 @@ class TestAPI(unittest.TestCase):
 
 
 
-    # Testing api returns with query strings
-    #---------------------------------------
+    # Testing API returns posts with query strings
+    #---------------------------------------------
     def test_get_posts_with_title(self):
         """ Filtering posts by title """
 
@@ -276,6 +276,129 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(post["body"], "More tests" )
 
   
+
+    # Testing API can post to database 
+    # --------------------------------
+
+    def test_post_put(self):
+        """ Posting a new post """
+
+        # Test post title and body
+        data = {
+            "title": "Example Post",
+            "body": "Just a test"
+        }
+
+        # Test API response with post method
+        
+            # - Test post request
+        response = self.client.post("api/posts",
+                                    data = json.dumps(data),
+                                    content_type="application/json",
+                                    headers=[("Accept", "application/json")]
+        )
+            # - Test header of response is as expected (201 not 200 as 'created')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.mimetype, "application/json")
+            # - Location of post is endpoint where new post can be accessed
+        self.assertEqual(urlparse(response.headers.get("Location")).path,
+                         "/api/posts/1")
+            # - Test response body('data') is as expected
+        data = json.loads(response.data)
+        self.assertEqual(data["id"], 1)
+        self.assertEqual(data["title"], "Example Post")
+        self.assertEqual(data["body"], "Just a test")
+
+            # - Test database contains post 
+        posts = session.query(models.Post).all()
+        self.assertEqual(len(posts), 1)
+
+            # - Test database entry is same as Test Post
+        post = posts[0]
+        self.assertEqual(post.title, "Example Post")
+        self.assertEqual(post.body, "Just a test")
+
+
+    # Testing unsupported MIME type
+
+    def test_unsupported_mimetype(self):
+        """ Testing endpoint handles unsupported MIME types gracefully """
+
+        # Example unsupported mimetype
+        data = "<xml></xml>"
+
+        # Building the test response case
+        response = self.client.post("/api/posts",
+                                    data=json.dumps(data),
+                                    content_type="application/xml",
+                                    headers=[("Accept", "application/json")]
+        )
+        # Test resposne status code is 415
+        self.assertEqual(response.status_code, 415)
+        
+        # Test response MIME type is still application/json
+        self.assertEqual(response.mimetype, "application/json")
+
+        # Test response message is returned
+        data = json.loads(response.data)
+        self.assertEqual(data["message"],
+                         "Request must contain application/json data")
+        
+
+    # Testing valid JSON data
+
+    def test_invalid_data(self):
+        """ Testing endpoint handles invalid json data gracefully:
+            Posting with an invalid body
+        """
+        # Construct test object - body of post is integer
+        data = {
+            "title": "Example Post",
+            "body": 32
+        }
+
+        # Construct test response expect from endpoint
+        response = self.client.post("api/posts",
+                                    data=json.dumps(data),
+                                    content_type="application/json",
+                                    headers=[("Accept", "application/json")]
+        )
+
+        # Test correct response code returned
+        self.assertEqual(response.status_code, 422)
+
+        # Test response message returned
+        data = json.loads(response.data)
+        self.assertEqual(data["message"], "32 is not of type 'string'")
+
+        
+    # Test missing JSON data
+
+    def test_missing_data(self):
+        """ Test endpoin handles missing post data gracefully:
+            Post missing body data
+        """
+        # Construct test object - body of post is integer
+        data = {
+            "title": "Example Post",
+        
+        }
+
+        # Construct test response expect from endpoint
+        response = self.client.post("api/posts",
+                                    data=json.dumps(data),
+                                    content_type="application/json",
+                                    headers=[("Accept", "application/json")]
+        )
+
+        # Test correct response code returned
+        self.assertEqual(response.status_code, 422)
+
+        # Test response message returned
+        data = json.loads(response.data)
+        self.assertEqual(data["message"], "'body' is a required property")
+        
+
         
     # Remove testing infrastructure
 
